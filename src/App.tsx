@@ -1,59 +1,94 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios'
 import { Neows, NearEarthObject } from './types';
 import { Container, Col, Row } from 'react-bootstrap'
-
+import { DateRangePicker } from 'react-date-range';
+import { format } from 'date-fns'
 
 
 function App() {
 
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date())
+  const [today, setToday] = useState<Date>()
+
+
+  const startDateRange = format(startDate, 'yyyy-MM-dd')
+  const endDateRange = format(endDate, 'yyyy-MM-dd')
+
+  const todayDataUrl = `https://api.nasa.gov/neo/rest/v1/feed/today?detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
+  const dateRangeUrl = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDateRange}&end_date=${endDateRange}&detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
 
   const getData = async () => {
 
-    const fetchedData = await axios(`https://api.nasa.gov/neo/rest/v1/feed/today?detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`)
+    const fetchedData = await axios.get(dateRangeUrl)
     return fetchedData.data
   }
 
-  const { isLoading, isError, data } = useQuery<Neows, Error>('neob', getData)
+  const { isLoading, isError, data } = useQuery<Neows, Error>('neob', getData, {
+    enabled: Boolean(startDateRange && endDateRange)
+  })
+
   console.log(data)
 
+  if (isLoading) return <h2>Loading...</h2>;
+  if (isError) return <h2>Something went wrong!</h2>;
 
+
+  const selectionRange = {
+    startDate: startDate,
+    endDate: endDate,
+    key: 'selection',
+  }
+
+
+  const handleSelect = (ranges: any) => {
+
+
+    setStartDate(ranges.selection.startDate)
+    setEndDate(ranges.selection.endDate)
+    console.log(ranges)
+
+  }
 
 
   return (
+
     <Container fluid>
       <Row>
-        <Col md={12}>
+        <Col md={10}>
 
-          {
-            isLoading && <div><h4>Loading...</h4></div>
-          }
-          {
-            isError && <div><h4>An error occured...</h4></div>
-
-          }
-
+          <DateRangePicker
+            ranges={[selectionRange]}
+            rangeColors={['#73B65C']}
+            onChange={handleSelect}
+          />
         </Col>
+        {/* <Col md={2}>
+          <button onClick={() => setToday(new Date())}>Today</button>
+        </Col> */}
       </Row>
+
+
       <Row>
         <Col md={2}>
-          <h3>Time/Date</h3>
+          <h5>Time/Date</h5>
         </Col>
         <Col md={2}>
-          <h3>Asteroid name</h3>
+          <h5>Asteroid name</h5>
         </Col>
         <Col md={2}>
-          <h3>Potential Hazard</h3>
+          <h5>Potential Hazard</h5>
         </Col>
         <Col md={2}>
-          <h3>Estimated Diameter (km)</h3>
+          <h5>Estimated Diameter (km)</h5>
         </Col>
         <Col md={2}>
-          <h3>Miss distance (km)</h3>
+          <h5>Miss distance (km)</h5>
         </Col>
         <Col md={2}>
-          <h3>Velocity (km/h)</h3>
+          <h5>Velocity (km/h)</h5>
         </Col>
 
       </Row>
