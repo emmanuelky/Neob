@@ -16,18 +16,20 @@ function App() {
   const [userNotes, setUserNotes] = useState<string[]>([])
 
 
-  const todayDataUrl = `https://api.nasa.gov/neo/rest/v1/feed/today?detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
-  const dateRangeUrl = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDateRange}&end_date=${endDateRange}&detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
+  axios.defaults.baseURL = "https://api.nasa.gov/neo/rest/v1"
+  const todayDataUrl = `/feed/today?detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
+  const dateRangeUrl = `/feed?start_date=${startDateRange}&end_date=${endDateRange}&detailed=true&api_key=${process.env.REACT_APP_NASA_API_KEY}`
 
   const getData = async () => {
-
     const fetchedData = await axios.get(startDateRange && endDateRange ? dateRangeUrl : todayDataUrl)
     return fetchedData.data
   }
 
-  const { isLoading, isError, data } = useQuery<Neows, Error>('neob', getData, {
-    //finding it difficult to get latest updated data containing the selected date range, it only fetches on window focus//
-    notifyOnChangeProps: 'tracked'
+  const { isLoading, isError, data } = useQuery<Neows, Error>(['neob', startDateRange, endDateRange], getData, {
+
+    notifyOnChangeProps: 'tracked',
+    cacheTime: Infinity,
+    staleTime: 8000
   })
 
 
@@ -42,7 +44,7 @@ function App() {
   }
 
 
-
+  console.log(startDateRange, endDateRange)
 
   const handleSelect = (ranges: any) => {
 
@@ -57,7 +59,7 @@ function App() {
 
 
   const handleAddNotes = (neob: NearEarthObject) => {
-    return ((Object as any).values(data?.near_earth_objects).filter((item: NearEarthObject) => item.id === neob.id ? setUserNotes([...userNotes, notes]) : null))
+    return (data?.near_earth_objects && Object.values(data?.near_earth_objects).filter((item: NearEarthObject) => item.id === neob.id ? setUserNotes([...userNotes, notes]) : null))
 
   }
 
@@ -106,9 +108,9 @@ function App() {
 
       {
 
-        (Object as any).values(data?.near_earth_objects).flat()
+        data?.near_earth_objects && Object.values(data?.near_earth_objects).flat()
           .slice(0, 50)
-          .sort((a: any, b: any) => {
+          .sort((a, b) => {
             const closestApproachDate = a.close_approach_data[0].close_approach_date_full
             const lastApproachDate = b.close_approach_data[0].close_approach_date_full
 
