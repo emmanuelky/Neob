@@ -6,14 +6,24 @@ import { Container, Col, Row } from 'react-bootstrap'
 import { DateRangePicker } from 'react-date-range';
 import { format } from 'date-fns'
 
+interface Notes {
+  notes?: string;
+}
+
+interface InputNote {
+  id: string;
+  usernotes?: string;
+}
+
+
 function App() {
 
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date())
   const [startDateRange, setStartDateRange] = useState<string>('')
   const [endDateRange, setEndDateRange] = useState<string>('')
-  const [notes, setNotes] = useState<string>('')
-  const [userNotes, setUserNotes] = useState<string[]>([])
+  const [notes, setNotes] = useState<Notes>({ notes: '' })
+  const [userNotes, setUserNotes] = useState<InputNote[]>([])
 
 
   axios.defaults.baseURL = "https://api.nasa.gov/neo/rest/v1"
@@ -44,7 +54,7 @@ function App() {
   }
 
 
-  console.log(startDateRange, endDateRange)
+  console.log(notes.notes)
 
   const handleSelect = (ranges: any) => {
 
@@ -57,12 +67,26 @@ function App() {
     console.log(ranges)
   }
 
-
-  const handleAddNotes = (neob: NearEarthObject) => {
-    return (data?.near_earth_objects && Object.values(data?.near_earth_objects).filter((item: NearEarthObject) => item.id === neob.id ? setUserNotes([...userNotes, notes]) : null))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNotes({ ...notes, [name]: value })
 
   }
 
+  const handleAddNotes = (neob: NearEarthObject) => {
+    if (notes.notes && notes.notes.length > 0 && data?.near_earth_objects && Object.values(data?.near_earth_objects).filter((item: NearEarthObject) => item.id === neob.id)) {
+      setUserNotes([...userNotes, {
+        id: neob.id,
+        usernotes: notes.notes
+      }])
+
+      setNotes({ notes: '' })
+
+    }
+
+  }
+
+  console.log(userNotes)
 
   return (
 
@@ -132,18 +156,15 @@ function App() {
               <Col md={2}>{item.close_approach_data[0].miss_distance.kilometers}</Col>
               <Col md={2}>{item.close_approach_data[0].relative_velocity.kilometers_per_hour}</Col>
               <Col md={2}>
-                <form >
+                <span>{
+                  userNotes.filter(neob => neob.id === item.id).map(neob => neob.usernotes)
+                }</span>
+                <input type="text"
+                  name="notes"
+                  onChange={handleInputChange}
 
-                  <input type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-
-                  />
-                  <button onClick={() => handleAddNotes(item)}>Add</button>
-                </form>
-
-                <h6>{userNotes}</h6>
-
+                />
+                <button onClick={() => handleAddNotes(item)}>Add</button>
               </Col>
 
 
